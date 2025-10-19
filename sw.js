@@ -1,7 +1,8 @@
-const CACHE_NAME = 'oshioki-btn-v1';
+const CACHE_NAME = 'oshioki-btn-v2';
 const ASSETS_TO_CACHE = [
-    './',
     './index.html',
+    './manifest.json',
+    './sw.js',
     './assets/SmartphoneBase.png',
     './assets/ExecutionButton_Base.png',
     './assets/ExecutionButton_Frame.png',
@@ -44,29 +45,41 @@ self.addEventListener('activate', (event) => {
 
 // 拦截请求：缓存优先策略
 self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
+    const req = event.request;
 
-            // 未缓存则从网络获取
-            return fetch(event.request).then((networkResponse) => {
-                // 只缓存成功的 GET 请求
-                if (
-                    event.request.method === 'GET' &&
-                    networkResponse &&
-                    networkResponse.status === 200
-                ) {
-                    const responseToCache = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseToCache);
-                    });
+    // 对导航请求采用 网络优先 + 离线回退，避免返回被重定向的响应
+    if (req.mode === 'navigate') {
+        event.respondWith(
+            fetch(req).then((networkResponse) => {
+                // 仅缓存非重定向的 200 响应
+                if (networkResponse && networkResponse.status === 200 && !networkResponse.redirected) {
+                    const copy = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
                 }
                 return networkResponse;
-            }).catch(() => {
-                // 网络失败且无缓存，返回离线页面（可选）
-                console.warn('[SW] Fetch failed and no cache:', event.request.url);
+            }).catch(async () => {
+                const cache = await caches.open(CACHE_NAME);
+                return cache.match('./index.html');
+            })
+        );
+        return;
+    }
+
+    // 其他资源：缓存优先
+    event.respondWith(
+        caches.match(req).then((cached) => {
+            if (cached) return cached;
+            return fetch(req).then((networkResponse) => {
+                if (
+                    req.method === 'GET' &&
+                    networkResponse &&
+                    networkResponse.status === 200 &&
+                    !networkResponse.redirected
+                ) {
+                    const copy = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+                }
+                return networkResponse;
             });
         })
     );
