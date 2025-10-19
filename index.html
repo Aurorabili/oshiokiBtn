@@ -35,7 +35,6 @@
             /* 禁用 iOS 长按菜单 */
             -webkit-user-select: none;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
         #app {
@@ -71,12 +70,12 @@
             touch-action: none;
             /* 避免触控滚动干扰 */
             outline: none;
-            transform: scale(1);
-            transition: transform 150ms cubic-bezier(.2, .8, .2, 1);
         }
 
-        .button.pressing:not(.completed) {
-            transform: scale(0.95);
+        .rings {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
         }
 
         .ring {
@@ -87,13 +86,24 @@
         }
 
         .ring-outer {
-            border: 100px solid rgba(0, 0, 0, 0.70);
+            border: 32px solid rgba(0, 0, 0, 0.70);
             filter: blur(32px);
         }
 
         .ring-inner {
             border: 10px solid rgba(0, 0, 0, 0.70);
             filter: blur(10px);
+        }
+
+        .button__content {
+            position: absolute;
+            inset: 0;
+            transition: transform 150ms cubic-bezier(.2, .8, .2, 1);
+            will-change: transform;
+        }
+
+        .button.pressing:not(.completed) .button__content {
+            transform: scale(0.95);
         }
 
         .circle {
@@ -184,15 +194,20 @@
         <div id="btn-wrapper">
             <div id="execution-btn" class="button" role="button" aria-pressed="false" tabindex="0"
                 aria-label="Execution Button">
-                <div class="ring ring-outer" aria-hidden="true"></div>
-                <div class="ring ring-inner" aria-hidden="true"></div>
 
-                <div class="circle">
-                    <img class="base" src="assets/ExecutionButton_Base.png" alt="Button base" />
-                    <div class="fill" aria-hidden="true"></div>
-                    <img class="frame" src="assets/ExecutionButton_Frame.png" alt="Button frame" />
-                    <img class="check" src="assets/ExecutionButton_CheckIcon.png" alt="Completed" />
-                </div>
+                <span class="rings">
+                    <i class="ring ring-outer" aria-hidden="true"></i>
+                    <i class="ring ring-inner" aria-hidden="true"></i>
+                </span>
+
+                <span class="button__content">
+                    <div class="circle">
+                        <img class="base" src="assets/ExecutionButton_Base.png" alt="Button base" />
+                        <div class="fill" aria-hidden="true"></div>
+                        <img class="frame" src="assets/ExecutionButton_Frame.png" alt="Button frame" />
+                        <img class="check" src="assets/ExecutionButton_CheckIcon.png" alt="Completed" />
+                    </div>
+                </span>
             </div>
         </div>
 
