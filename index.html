@@ -278,7 +278,7 @@
             try { pressAudio.pause(); } catch { }
         }
         function playCompleteSound() {
-            try { stopPressSound(); completeAudio.currentTime = 0; completeAudio.play().catch(() => { }); } catch (e) { showToast(`⚠️ 播放失败 ${COMPLETE_SOUND}: ${e}`); }
+            try { completeAudio.currentTime = 0; completeAudio.play().catch(() => { }); } catch (e) { showToast(`⚠️ 播放失败 ${COMPLETE_SOUND}: ${e}`); }
         }
 
         function startFilling() {
@@ -357,9 +357,9 @@
 
             oshiokiCallback();
 
-            playCompleteSound();
-
             if (navigator.vibrate) { navigator.vibrate(50); }
+
+            playCompleteSound();
         }
 
         function resetProgress(animated = true) {
