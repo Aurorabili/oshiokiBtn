@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Oshioki Button</title>
+    <style>
+        :root {
+            --size: 250px;
+            /* 按钮尺寸 */
+            --fill-duration: 5;
+            /* 充能时长（秒） */
+            --fill-opacity: 0.8;
+            /* 红色填充不透明度 */
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+                Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            -webkit-touch-callout: none;
+            /* 禁用 iOS 长按菜单 */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #app {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
+        }
+
+        #btn-wrapper {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, calc(-50% - 50px));
+            width: var(--size);
+            height: var(--size);
+        }
+
+        .button {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            /* 避免触控滚动干扰 */
+            outline: none;
+            transform: scale(1);
+            transition: transform 150ms cubic-bezier(.2, .8, .2, 1);
+        }
+
+        .button.pressing:not(.completed) {
+            transform: scale(0.95);
+        }
+
+        .ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .ring-outer {
+            border: 100px solid rgba(0, 0, 0, 0.70);
+            filter: blur(32px);
+        }
+
+        .ring-inner {
+            border: 10px solid rgba(0, 0, 0, 0.70);
+            filter: blur(10px);
+        }
+
+        .circle {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .circle .base {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            /* 避免底图拦截事件导致长按菜单 */
+        }
+
+        .circle .frame {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .circle .fill {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 0%;
+            background: rgba(160, 46, 61, var(--fill-opacity));
+            pointer-events: none;
+            transition: height 250ms ease-out;
+        }
+
+        .circle .check {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%) scale(0.6);
+            bottom: 10%;
+            width: 16%;
+            height: auto;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 250ms cubic-bezier(.2, .8, .2, 1), transform 250ms cubic-bezier(.2, .8, .2, 1);
+        }
+
+        .button.completed .circle .check {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        #toast {
+            position: absolute;
+            left: 50%;
+            bottom: 60px;
+            transform: translateX(-50%);
+            max-width: min(80vw, 520px);
+            color: #fff;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 18px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 250ms ease, transform 250ms ease;
+            will-change: opacity, transform;
+            font-size: 15px;
+        }
+
+        #toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <img src="assets/SmartphoneBase.png" alt="Background" class="bg" />
+
+        <div id="btn-wrapper">
+            <div id="execution-btn" class="button" role="button" aria-pressed="false" tabindex="0"
+                aria-label="Execution Button">
+                <div class="ring ring-outer" aria-hidden="true"></div>
+                <div class="ring ring-inner" aria-hidden="true"></div>
+
+                <div class="circle">
+                    <img class="base" src="assets/ExecutionButton_Base.png" alt="Button base" />
+                    <div class="fill" aria-hidden="true"></div>
+                    <img class="frame" src="assets/ExecutionButton_Frame.png" alt="Button frame" />
+                    <img class="check" src="assets/ExecutionButton_CheckIcon.png" alt="Completed" />
+                </div>
+            </div>
+        </div>
+
+        <div id="toast" aria-live="polite"></div>
+    </div>
+
+    <script>
+        const SIZE = 250;
+        const FILL_DURATION = 5.0;
+        const FILL_OPACITY = 0.7;
+
+        const PRESS_SOUND = 'assets/press.wav';
+        const COMPLETE_SOUND = 'assets/complete.wav';
+
+        const root = document.documentElement;
+        root.style.setProperty('--size', SIZE + 'px');
+        root.style.setProperty('--fill-opacity', FILL_OPACITY);
+
+        const btn = document.getElementById('execution-btn');
+        const fillEl = btn.querySelector('.fill');
+        const toastEl = document.getElementById('toast');
+
+        /* 禁用右键/长按菜单与选择/拖拽 */
+        document.addEventListener('contextmenu', (e) => {
+            // 仅在按钮区域或整个应用内都禁用
+            if (e.target === btn || btn.contains(e.target) || e.target.closest('#app')) {
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('selectstart', (e) => e.preventDefault());
+        document.addEventListener('dragstart', (e) => e.preventDefault());
+
+        let progress = 0;
+        let isPressing = false;
+        let isCompleted = false;
+        let rafId = null;
+        let startTs = null;
+        let mode = 'idle';
+
+        const pressAudio = new Audio(PRESS_SOUND);
+        const completeAudio = new Audio(COMPLETE_SOUND);
+        pressAudio.preload = 'auto';
+        completeAudio.preload = 'auto';
+
+        pressAudio.addEventListener('error', () => showToast(`❌ 未找到音效: ${PRESS_SOUND}`));
+        completeAudio.addEventListener('error', () => showToast(`❌ 未找到音效: ${COMPLETE_SOUND}`));
+
+        function showToast(message, duration = 1600) {
+            toastEl.textContent = message;
+            toastEl.classList.add('show');
+
+            setTimeout(() => { toastEl.classList.add('show'); }, 0);
+            clearTimeout(showToast._timer);
+            showToast._timer = setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, duration);
+        }
+
+        function setFill(val) {
+            progress = Math.max(0, Math.min(1, val));
+            fillEl.style.height = (progress * 100).toFixed(4) + '%';
+        }
+
+        function playPressSound() {
+            try { pressAudio.currentTime = 0; pressAudio.play().catch(() => { }); } catch (e) { showToast(`⚠️ 播放失败 ${PRESS_SOUND}: ${e}`); }
+        }
+        function stopPressSound() {
+            try { pressAudio.pause(); } catch { }
+        }
+        function playCompleteSound() {
+            try { completeAudio.currentTime = 0; completeAudio.play().catch(() => { }); } catch (e) { showToast(`⚠️ 播放失败 ${COMPLETE_SOUND}: ${e}`); }
+        }
+
+        function startFilling() {
+            cancelAnimationFrame(rafId);
+            if (isCompleted) return;
+
+            const beginProgress = progress;
+            if (beginProgress >= 1) { complete(); return; }
+            mode = 'filling';
+            startTs = performance.now();
+            const durationMs = Math.max(0, (1 - beginProgress) * FILL_DURATION * 1000);
+            if (durationMs <= 16) {
+                setFill(1);
+                stopPressSound();
+                complete();
+                return;
+            }
+
+            const step = (now) => {
+                if (mode !== 'filling') return;
+                const elapsed = now - startTs;
+                const t = Math.min(1, elapsed / durationMs);
+
+                setFill(beginProgress + (1 - beginProgress) * t);
+                if (t >= 1) {
+                    cancelAnimationFrame(rafId);
+                    rafId = null;
+                    stopPressSound();
+                    complete();
+                } else {
+                    rafId = requestAnimationFrame(step);
+                }
+            };
+            rafId = requestAnimationFrame(step);
+        }
+
+        function startDraining() {
+            cancelAnimationFrame(rafId);
+            if (progress <= 0 || isCompleted) {
+                mode = 'idle';
+                return;
+            }
+            mode = 'draining';
+            const beginProgress = progress;
+            const durationMs = beginProgress * FILL_DURATION * 1000;
+
+            // 若进度低于15直接清零
+            if (durationMs <= 15) {
+                setFill(0);
+                mode = 'idle';
+                return;
+            }
+            startTs = performance.now();
+
+            const step = (now) => {
+                if (mode !== 'draining') return;
+                const elapsed = now - startTs;
+                const t = Math.min(1, elapsed / durationMs);
+
+                setFill(beginProgress * (1 - t));
+                if (t >= 1) {
+                    cancelAnimationFrame(rafId);
+                    rafId = null;
+                    mode = 'idle';
+                } else {
+                    rafId = requestAnimationFrame(step);
+                }
+            };
+            rafId = requestAnimationFrame(step);
+        }
+
+        function complete() {
+            isCompleted = true;
+            btn.classList.add('completed');
+            btn.setAttribute('aria-pressed', 'true');
+
+            oshiokiCallback();
+
+            if (navigator.vibrate) { navigator.vibrate(50); }
+
+            playCompleteSound();
+        }
+
+        function resetProgress(animated = true) {
+            cancelAnimationFrame(rafId); rafId = null; startTs = null;
+            mode = 'idle';
+            if (!animated) {
+                fillEl.style.transition = 'none';
+                setFill(0);
+                void fillEl.offsetHeight;
+                fillEl.style.transition = '';
+            } else {
+                setFill(0);
+            }
+            isPressing = false;
+        }
+
+        function resetAll(animated = true) {
+            resetProgress(animated);
+            isCompleted = false;
+            btn.classList.remove('completed');
+            btn.setAttribute('aria-pressed', 'false');
+        }
+
+        const onPointerDown = (e) => {
+            if (isCompleted) return;
+            isPressing = true;
+            btn.classList.add('pressing');
+            try { btn.setPointerCapture && btn.setPointerCapture(e.pointerId); } catch { }
+            playPressSound();
+            startFilling();
+            e.preventDefault();
+        };
+
+        const onPointerUpOrCancel = () => {
+            if (!isPressing) return;
+            isPressing = false;
+            btn.classList.remove('pressing');
+            stopPressSound();
+            if (!isCompleted) {
+                startDraining();
+            }
+        };
+
+        function isActivationKey(e) {
+            return e.code === 'Space' || e.code === 'Enter';
+        }
+
+        const onKeyDown = (e) => {
+            if (!isActivationKey(e)) return;
+            if (isCompleted) { e.preventDefault(); return; }
+            if (!isPressing && !e.repeat) {
+                isPressing = true;
+                btn.classList.add('pressing');
+                playPressSound();
+                startFilling();
+            }
+            e.preventDefault();
+        };
+
+        const onKeyUp = (e) => {
+            if (!isActivationKey(e)) return;
+            if (!isPressing) { e.preventDefault(); return; }
+            isPressing = false;
+            btn.classList.remove('pressing');
+            stopPressSound();
+            if (!isCompleted) startDraining();
+            e.preventDefault();
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        btn.addEventListener('pointerdown', onPointerDown);
+        window.addEventListener('pointerup', onPointerUpOrCancel);
+        window.addEventListener('pointercancel', onPointerUpOrCancel);
+        window.addEventListener('blur', onPointerUpOrCancel);
+
+        btn.addEventListener('click', (e) => {
+            if (isCompleted) {
+                resetAll(true);
+            } else {
+                e.preventDefault();
+            }
+        });
+
+        function oshiokiCallback() {
+            /* 在这里联动惩罚小玩具狠狠的处刑群友 */
+
+            // const BASE_URL = 'https://example.com/api/v1/oshioki_callback';
+            // fetch(BASE_URL, { method: 'POST' })
+            // .then(response => {
+            //     if (!response.ok) {
+            //         throw new Error(`网络响应异常: ${response.status}`);
+            //     }
+            // })
+            // .catch(error => {
+            //     console.error('请求失败:', error);
+            // });
+        }
+    </script>
+</body>
+
+</html>
