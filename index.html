@@ -6,6 +6,19 @@
     <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- iOS Safari PWA 支持 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Oshioki">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <!-- 主题色 -->
+    <meta name="theme-color" content="#a02e3d">
+
     <title>Oshioki Button - 处刑按钮</title>
     <style>
         :root {
@@ -459,6 +472,19 @@
             // .catch(error => {
             //     console.error('请求失败:', error);
             // });
+        }
+
+        // 注册 Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('✅ Service Worker 注册成功:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.error('❌ Service Worker 注册失败:', error);
+                    });
+            });
         }
     </script>
 </body>

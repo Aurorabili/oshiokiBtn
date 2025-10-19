@@ -1,0 +1,18 @@
+{
+    "name": "Oshioki Button - 处刑按钮",
+    "short_name": "处刑按钮",
+    "description": "邪恶的魔法少女就要被狠狠的处刑",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#a02e3d",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "assets/icon-256.png",
+            "sizes": "256x256",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
