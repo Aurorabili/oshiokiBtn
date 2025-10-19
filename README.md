@@ -1,6 +1,6 @@
 # Oshioki Button
 
-游戏 「魔法少女的魔女审判」 中处刑按钮效果的网页复刻。[即刻体验](https://aurorabili.github.io/oshiokiBtn/)
+游戏 「魔法少女的魔女审判」 中处刑按钮效果的网页复刻。[即刻体验](https://oshioki.nmsl.fyi/)
 
 可以进行二次开发以联动~~外部设备~~处刑。
 
