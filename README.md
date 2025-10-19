@@ -4,7 +4,7 @@
 
 可以进行二次开发以联动~~外部设备~~处刑。
 
-[`index.html`](index.html#oshiokiCallback)
+[`index.html`](index.html#L447)
 
 ```javascript
 function oshiokiCallback() {
