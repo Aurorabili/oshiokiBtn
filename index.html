@@ -287,13 +287,13 @@
         }
 
         function playPressSound() {
-            try { pressAudio.currentTime = 0; pressAudio.play().catch(() => { }); } catch (e) { showToast(`⚠️ 播放失败 ${PRESS_SOUND}: ${e}`); }
+            try { pressAudio.currentTime = 0; pressAudio.play().catch(() => { }); } catch (e) { alert(`⚠️ 播放失败 ${PRESS_SOUND}: ${e}`); }
         }
         function stopPressSound() {
             try { pressAudio.pause(); } catch { }
         }
         function playCompleteSound() {
-            try { completeAudio.currentTime = 0; completeAudio.play().catch(() => { }); } catch (e) { showToast(`⚠️ 播放失败 ${COMPLETE_SOUND}: ${e}`); }
+            try { completeAudio.currentTime = 0; completeAudio.play().catch(() => { }); } catch (e) { alert(`⚠️ 播放失败 ${COMPLETE_SOUND}: ${e}`); }
         }
 
         function startFilling() {
@@ -403,6 +403,10 @@
             isPressing = true;
             btn.classList.add('pressing');
             try { btn.setPointerCapture && btn.setPointerCapture(e.pointerId); } catch { }
+
+            completeAudio.play().catch(() => { });
+            completeAudio.pause();
+
             playPressSound();
             startFilling();
             e.preventDefault();
