@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oshioki-btn-v2';
+const CACHE_NAME = 'oshioki-btn-v3';
 const ASSETS_TO_CACHE = [
     './index.html',
     './manifest.json',
